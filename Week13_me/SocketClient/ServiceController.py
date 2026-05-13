@@ -12,8 +12,10 @@ class ExecuteSendCommand(QtCore.QThread):
 
     def run(self):
         client = SocketClient()
-        client.send_command(self.data['command'], self.data['parameters'])
-        response = client.wait_response()
-        self.return_sig.emit(json.dumps(response))    
-        # client.close()
+        try:
+            client.send_command(self.data['command'], self.data['parameters'])
+            response = client.wait_response()
+            self.return_sig.emit(json.dumps(response))
+        finally:
+            client.close()
     

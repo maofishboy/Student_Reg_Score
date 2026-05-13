@@ -21,5 +21,6 @@ class SocketClient:
         response = json.loads(raw_data)
         print("The client received data =>{}".format(response))
         return response
-    # def close(self):
-    #     self.client_socket.close()
+
+    def close(self):
+        self.client_socket.close()
