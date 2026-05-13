@@ -17,8 +17,10 @@ This is a simple Python student score management system built with:
 ## Project Structure
 
 ```text
-Week13_me/
+.
 |- Main.py
+|- README.md
+|- requirements.txt
 |- WorkWidgets/
 |- SocketClient/
 |- server/
@@ -46,14 +48,12 @@ Open two terminals.
 Terminal 1: start the server
 
 ```powershell
-cd Week13_me\server
-python MainServer.py
+python server\MainServer.py
 ```
 
 Terminal 2: start the client UI
 
 ```powershell
-cd Week13_me
 python Main.py
 ```
 
