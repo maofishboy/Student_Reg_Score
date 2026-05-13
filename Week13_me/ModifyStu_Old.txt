@@ -1,0 +1,646 @@
+from PyQt6 import QtWidgets, QtGui
+from WorkWidgets.WidgetComponents import LabelComponent, LineEditComponent, ButtonComponent
+from SocketClient.ServiceController import ExecuteSendCommand
+import json
+
+class ModifyStuWidget(QtWidgets.QWidget):
+    def __init__(self):
+        super().__init__()
+        self.setObjectName("mod_sub_widget")
+        layout = QtWidgets.QVBoxLayout()
+        header_label = LabelComponent(20, "Modify Subject")
+        self.radio_button_change = QtWidgets.QRadioButton('Change')
+        self.radio_button_add = QtWidgets.QRadioButton('Add new')
+        self.radio_button_change.toggled.connect(self.radio_button_change__on_clicked)
+        self.radio_button_add.toggled.connect(self.radio_button_add__on_clicked)
+        self.mod_widget = ChangeWidget(parent=self)  
+        layout.addWidget(header_label, stretch=1)
+        layout.addWidget(self.radio_button_change, stretch=1)
+        layout.addWidget(self.radio_button_add, stretch=1)
+        layout.addWidget(self.mod_widget, stretch=7)
+        self.setLayout(layout)
+    
+    
+    def radio_button_change__on_clicked(self):
+        if self.radio_button_change.isChecked():
+            self.mod_widget.deleteLater()  
+            self.mod_widget = ChangeWidget()
+            self.layout().addWidget(self.mod_widget, stretch=7)
+    
+    def radio_button_add__on_clicked(self):
+        if self.radio_button_add.isChecked():
+            self.mod_widget.deleteLater()  
+            self.mod_widget = AddNewWidget(parent=self)
+            self.layout().addWidget(self.mod_widget, stretch=7)
+
+    def load(self):
+        show_dict = {'command': 'show', 'parameters': {}}
+        self.send_command = ExecuteSendCommand(show_dict)
+        self.send_command.return_sig.connect(self.process_show_result)
+        self.send_command.start()
+    
+    def process_show_result(self, result):
+        self.result = json.loads(result)
+        if self.result['status'] == 'OK':
+            students = self.result['parameters']
+            student_names = [student['name'] for student in students.values()]
+            self.mod_widget.populate_combo_box_name(student_names)
+            now_name = self.mod_widget.name
+            all_subjects = list(students[now_name]['scores'].keys())
+            if isinstance(self.mod_widget, ChangeWidget):
+                self.mod_widget.populate_combo_box_sub(all_subjects)
+
+
+
+class ChangeWidget(QtWidgets.QWidget):
+    def __init__(self,parent=None):
+        super().__init__()
+        self.setObjectName("change_sub_widget")
+        layout = QtWidgets.QVBoxLayout()
+        self.combo_box_name = QtWidgets.QComboBox()
+        self.combo_box_name.currentIndexChanged.connect(self.combo_box_name_select_changed)
+        self.combo_box_sub = QtWidgets.QComboBox()
+        self.combo_box_sub.currentIndexChanged.connect(self.combo_box_sub_select_changed)
+        self.score_editor_label = LineEditComponent("")
+        self.score_editor_label.textChanged.connect(self.score_change)
+        self.score_editor_label.mousePressEvent = self.score_click
+        self.score_editor_label.setValidator(QtGui.QIntValidator(0, 999))
+        self.change_button = ButtonComponent("Change", enable=False)
+        self.change_button.clicked.connect(self.change_action)
+
+        layout.addWidget(self.combo_box_name)
+        layout.addWidget(self.combo_box_sub)
+        layout.addWidget(self.score_editor_label)
+        layout.addWidget(self.change_button)
+        
+        self.setLayout(layout)
+    
+
+    def populate_combo_box_name(self, student_names):
+        self.combo_box_name.addItems(student_names)
+
+    def populate_combo_box_sub(self, subjects):
+        self.combo_box_name.addItems(subjects)
+   
+    def combo_box_name_select_changed(self):
+        self.name = self.combo_box_name.currentText()
+
+    def combo_box_sub_select_changed(self):
+        self.subject = self.combo_box_sub.currentText()
+
+    def score_change(self):  
+        if self.score_editor_label.text().strip():
+            self.change_button.setEnabled(True)
+        else:
+            self.change_button.setEnabled(False)     
+
+    def score_click(self, event):
+        self.score_editor_label.clear()
+
+    def change_action(self): #待修改
+        if self.parent:
+            student_dict = self.parent.result['parameters']
+            student_dict[self.name]['scores'][self.subject] = self.score_editor_label.text()
+            change_dict = {'command': 'modify', 'parameters': student_dict[self.name]}
+            self.send_command = ExecuteSendCommand(change_dict)
+            self.send_command.return_sig.connect(self.process_send_result)
+            self.send_command.start() 
+
+    def process_send_result(self, result): #待修改
+        result = json.loads(result)
+        if result['status'] == 'OK':
+            self.score_editor_label.clear() 
+            self.change_button.setEnabled(False)
+        else:
+            self.change_button.setEnabled(True)
+             
+
+
+
+class AddNewWidget(QtWidgets.QWidget):
+    def __init__(self):
+        super().__init__()
+        self.setObjectName("add_newsub_widget")
+        layout = QtWidgets.QVBoxLayout()
+        self.combo_box_name = QtWidgets.QComboBox()
+        self.combo_box_name.currentIndexChanged.connect(self.combo_box_select_changed)
+
+
+------------------------------------------------------------------------------
+from PyQt6 import QtWidgets, QtGui
+from WorkWidgets.WidgetComponents import LabelComponent, LineEditComponent, ButtonComponent
+from SocketClient.ServiceController import ExecuteSendCommand
+import json
+
+class ModifyStuWidget(QtWidgets.QWidget):
+    def __init__(self):
+        super().__init__()
+        self.setObjectName("mod_sub_widget")
+        layout = QtWidgets.QVBoxLayout()
+        header_label = LabelComponent(20, "Modify Subject")
+        self.radio_button_change = QtWidgets.QRadioButton('Change')
+        self.radio_button_add = QtWidgets.QRadioButton('Add new')
+        self.radio_button_change.toggled.connect(self.radio_button_change_on_clicked)
+        self.radio_button_add.toggled.connect(self.radio_button_add_on_clicked)
+        self.mod_widget = ChangeWidget(parent=self)  
+        layout.addWidget(header_label, stretch=1)
+        layout.addWidget(self.radio_button_change, stretch=1)
+        layout.addWidget(self.radio_button_add, stretch=1)
+        layout.addWidget(self.mod_widget, stretch=7)
+        self.setLayout(layout)
+    
+    def radio_button_change_on_clicked(self):
+        if self.radio_button_change.isChecked():
+            self.mod_widget.deleteLater()
+            self.mod_widget = ChangeWidget(parent=self)
+            self.layout().addWidget(self.mod_widget, stretch=7)
+    
+    def radio_button_add_on_clicked(self):
+        if self.radio_button_add.isChecked():
+            self.mod_widget.deleteLater()
+            self.mod_widget = AddNewWidget(parent=self)
+            self.layout().addWidget(self.mod_widget, stretch=7)
+
+    def load(self):
+        show_dict = {'command': 'show', 'parameters': {}}
+        self.send_command = ExecuteSendCommand(show_dict)
+        self.send_command.return_sig.connect(self.process_show_result)
+        self.send_command.start()
+    
+    def process_show_result(self, result):
+        self.result = json.loads(result)
+        if self.result['status'] == 'OK':
+            students = self.result['parameters']
+            student_names = [student['name'] for student in students.values()]
+            self.mod_widget.populate_combo_box_name(student_names)
+            now_name = self.mod_widget.name if hasattr(self.mod_widget, 'name') else None
+            if now_name and now_name in students:
+                all_subjects = list(students[now_name]['scores'].keys())
+                if isinstance(self.mod_widget, ChangeWidget):
+                    self.mod_widget.populate_combo_box_sub(all_subjects)
+
+
+class ChangeWidget(QtWidgets.QWidget):
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.parent = parent
+        self.setObjectName("change_sub_widget")
+        layout = QtWidgets.QVBoxLayout()
+        self.combo_box_name = QtWidgets.QComboBox()
+        self.combo_box_name.currentIndexChanged.connect(self.combo_box_name_select_changed)
+        self.combo_box_sub = QtWidgets.QComboBox()
+        self.combo_box_sub.currentIndexChanged.connect(self.combo_box_sub_select_changed)
+        self.score_editor_label = LineEditComponent("")
+        self.score_editor_label.textChanged.connect(self.score_change)
+        self.score_editor_label.mousePressEvent = self.score_click
+        self.score_editor_label.setValidator(QtGui.QIntValidator(0, 999))
+        self.change_button = ButtonComponent("Change", enable=False)
+        self.change_button.clicked.connect(self.change_action)
+
+        layout.addWidget(self.combo_box_name)
+        layout.addWidget(self.combo_box_sub)
+        layout.addWidget(self.score_editor_label)
+        layout.addWidget(self.change_button)
+        
+        self.setLayout(layout)
+    
+
+    def populate_combo_box_name(self, student_names):
+        self.combo_box_name.clear()
+        self.combo_box_name.addItems(student_names)
+
+    def populate_combo_box_sub(self, subjects):
+        self.combo_box_sub.clear()
+        self.combo_box_sub.addItems(subjects)
+   
+    def combo_box_name_select_changed(self):
+        self.name = self.combo_box_name.currentText()
+        if self.parent:
+            students = self.parent.result['parameters']
+            if self.name in students:
+                subjects = list(students[self.name]['scores'].keys())
+                self.populate_combo_box_sub(subjects)
+
+    def combo_box_sub_select_changed(self):
+        self.subject = self.combo_box_sub.currentText()
+
+    def score_change(self):  
+        if self.score_editor_label.text().strip():
+            self.change_button.setEnabled(True)
+        else:
+            self.change_button.setEnabled(False)     
+
+    def score_click(self, event):
+        self.score_editor_label.clear()
+
+    def change_action(self):
+        if self.parent:
+            student_dict = self.parent.result['parameters']
+            student_dict[self.name]['scores'][self.subject] = float(self.score_editor_label.text())
+            change_dict = {'command': 'modify', 'parameters': student_dict[self.name]}
+            self.send_command = ExecuteSendCommand(change_dict)
+            self.send_command.return_sig.connect(self.process_send_result)
+            self.send_command.start() 
+
+    def process_send_result(self, result):
+        result = json.loads(result)
+        if result['status'] == 'OK':
+            self.score_editor_label.clear()
+            self.change_button.setEnabled(False)
+        else:
+            self.change_button.setEnabled(True)
+
+
+
+
+class AddNewWidget(QtWidgets.QWidget):
+    def __init__(self):
+        super().__init__()
+        self.setObjectName("add_newsub_widget")
+        layout = QtWidgets.QVBoxLayout()
+        self.combo_box_name = QtWidgets.QComboBox()
+        self.combo_box_name.currentIndexChanged.connect(self.combo_box_select_changed)
+--------------------------------------------------------------------
+from PyQt6 import QtWidgets, QtGui
+from WorkWidgets.WidgetComponents import LabelComponent, LineEditComponent, ButtonComponent
+from SocketClient.ServiceController import ExecuteSendCommand
+import json
+
+class ModifyStuWidget(QtWidgets.QWidget):
+    def __init__(self):
+        super().__init__()
+        self.setObjectName("mod_sub_widget")
+        layout = QtWidgets.QVBoxLayout()
+        header_label = LabelComponent(20, "Modify Subject")
+        self.radio_button_change = QtWidgets.QRadioButton('Change')
+        self.radio_button_add = QtWidgets.QRadioButton('Add new')
+        self.radio_button_change.toggled.connect(self.radio_button_change_on_clicked)
+        self.radio_button_add.toggled.connect(self.radio_button_add_on_clicked)
+        self.mod_widget = ChangeWidget(parent=self)  
+        layout.addWidget(header_label, stretch=1)
+        layout.addWidget(self.radio_button_change, stretch=1)
+        layout.addWidget(self.radio_button_add, stretch=1)
+        layout.addWidget(self.mod_widget, stretch=7)
+        self.setLayout(layout)
+    
+    def radio_button_change_on_clicked(self):
+        if self.radio_button_change.isChecked():
+            self.mod_widget.deleteLater()
+            self.mod_widget = ChangeWidget(parent=self)  # 确保传递parent参数 
+            self.layout().addWidget(self.mod_widget, stretch=7)
+    
+    def radio_button_add_on_clicked(self):
+        if self.radio_button_add.isChecked():
+            self.mod_widget.deleteLater()
+            self.mod_widget = AddNewWidget(parent=self)
+            self.layout().addWidget(self.mod_widget, stretch=7)
+
+    def load(self):
+        show_dict = {'command': 'show', 'parameters': {}}
+        self.send_command = ExecuteSendCommand(show_dict)
+        self.send_command.return_sig.connect(self.process_show_result)
+        self.send_command.start()
+    
+    def process_show_result(self, result):
+        self.result = json.loads(result)
+        if self.result['status'] == 'OK':
+            students = self.result['parameters']
+            student_names = [student['name'] for student in students.values()]
+            self.mod_widget.populate_combo_box_name(student_names)
+            now_name = self.mod_widget.name if hasattr(self.mod_widget, 'name') else None
+            if now_name and now_name in students:
+                all_subjects = list(students[now_name]['scores'].keys())
+                if isinstance(self.mod_widget, ChangeWidget):
+                    self.mod_widget.populate_combo_box_sub(all_subjects)
+
+class ChangeWidget(QtWidgets.QWidget):
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.parent = parent
+        self.setObjectName("change_sub_widget")
+        layout = QtWidgets.QVBoxLayout()
+        self.combo_box_name = QtWidgets.QComboBox()
+        self.combo_box_name.currentIndexChanged.connect(self.combo_box_name_select_changed)
+        self.combo_box_sub = QtWidgets.QComboBox()
+        self.combo_box_sub.currentIndexChanged.connect(self.combo_box_sub_select_changed)
+        self.combo_box_score = QtWidgets.QComboBox()
+        self.combo_box_score.currentIndexChanged.connect(self.combo_box_score_select_changed)
+        self.combo_box_score.addItems([str(i) for i in range(101)])
+        self.change_button = ButtonComponent("Change", enable=True)
+        self.change_button.clicked.connect(self.change_action)
+
+        layout.addWidget(self.combo_box_name)
+        layout.addWidget(self.combo_box_sub)
+        layout.addWidget(self.combo_box_score)
+        layout.addWidget(self.change_button)
+        
+        self.setLayout(layout)
+
+    def populate_combo_box_name(self, student_names):
+        self.combo_box_name.clear()
+        self.combo_box_name.addItems(student_names)
+
+    def populate_combo_box_sub(self, subjects):
+        self.combo_box_sub.clear()
+        self.combo_box_sub.addItems(subjects)
+    
+    def combo_box_name_select_changed(self):
+        self.name = self.combo_box_name.currentText()
+        if self.parent:
+            students = self.parent.result['parameters']
+            if self.name in students:
+                subjects = list(students[self.name]['scores'].keys())
+                self.populate_combo_box_sub(subjects)
+
+    def combo_box_sub_select_changed(self):
+        self.subject = self.combo_box_sub.currentText()
+
+    def combo_box_score_select_changed(self):
+        self.score = self.combo_box_score.currentText()
+        # self.change_button.setEnabled(True)
+
+    def change_action(self):
+        if self.parent:
+            student_dict = self.parent.result['parameters']
+            student_dict[self.name]['scores'][self.subject] = self.score
+            change_dict = {'command': 'modify', 'parameters': student_dict[self.name]}
+            self.send_command = ExecuteSendCommand(change_dict)
+            self.send_command.return_sig.connect(self.process_send_result)
+            self.send_command.start() 
+
+    def process_send_result(self, result):
+        result = json.loads(result)
+        if result['status'] == 'OK':
+            self.change_button.setEnabled(False)
+        else:
+            self.change_button.setEnabled(True)
+-------------------------------------------------------
+
+from PyQt6 import QtWidgets, QtGui
+from WorkWidgets.WidgetComponents import LabelComponent, LineEditComponent, ButtonComponent
+from SocketClient.ServiceController import ExecuteSendCommand
+import json
+
+class ModifyStuWidget(QtWidgets.QWidget):
+    def __init__(self):
+        super().__init__()
+        self.setObjectName("mod_sub_widget")
+        layout = QtWidgets.QVBoxLayout()
+        header_label = LabelComponent(20, "Modify Subject")
+        self.radio_button_change = QtWidgets.QRadioButton('Change')
+        self.radio_button_add = QtWidgets.QRadioButton('Add new')
+        self.radio_button_change.toggled.connect(self.radio_button_change_on_clicked)
+        self.radio_button_add.toggled.connect(self.radio_button_add_on_clicked)
+        self.mod_widget = ChangeWidget(parent=self)  
+        layout.addWidget(header_label, stretch=1)
+        layout.addWidget(self.radio_button_change, stretch=1)
+        layout.addWidget(self.radio_button_add, stretch=1)
+        layout.addWidget(self.mod_widget, stretch=7)
+        self.setLayout(layout)
+    
+    def radio_button_change_on_clicked(self):
+        if self.radio_button_change.isChecked():
+            self.mod_widget.deleteLater()
+            self.mod_widget = ChangeWidget(parent=self)  # 确保传递parent参数 
+            self.layout().addWidget(self.mod_widget, stretch=7)
+            self.populate_change_widgets()
+    
+    def radio_button_add_on_clicked(self):
+        if self.radio_button_add.isChecked():
+            self.mod_widget.deleteLater()
+            self.mod_widget = AddNewWidget(parent=self)
+            self.layout().addWidget(self.mod_widget, stretch=7)
+            self.populate_add_widgets()
+
+
+    def populate_change_widgets(self):
+        student_names = [student['name'] for student in self.result['parameters'].values()]
+        self.mod_widget.populate_combo_box_name(student_names)
+        now_name = self.mod_widget.name if hasattr(self.mod_widget, 'name') else None
+        if now_name and now_name in self.result['parameters']:
+            all_subjects = list(self.result['parameters'][now_name]['scores'].keys())
+            if isinstance(self.mod_widget, ChangeWidget):
+                self.mod_widget.populate_combo_box_sub(all_subjects)
+    
+    def populate_add_widgets(self):
+        if hasattr(self, 'result'):
+            student_names = [student['name'] for student in self.result['parameters'].values()]
+            self.mod_widget.populate_combo_box_name(student_names)
+
+
+    def load(self):
+        show_dict = {'command': 'show', 'parameters': {}}
+        self.send_command = ExecuteSendCommand(show_dict)
+        self.send_command.return_sig.connect(self.process_show_result)
+        self.send_command.start()
+    
+    def process_show_result(self, result):
+        self.result = json.loads(result)
+        if self.result['status'] == 'OK':
+            students = self.result['parameters']
+            student_names = [student['name'] for student in students.values()]
+            self.mod_widget.populate_combo_box_name(student_names)
+            now_name = self.mod_widget.name if hasattr(self.mod_widget, 'name') else None
+            if now_name and now_name in students:
+                all_subjects = list(students[now_name]['scores'].keys())
+                if isinstance(self.mod_widget, ChangeWidget):
+                    self.mod_widget.populate_combo_box_sub(all_subjects)
+
+class ChangeWidget(QtWidgets.QWidget):
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.parent = parent
+        self.setObjectName("change_sub_widget")
+        layout = QtWidgets.QVBoxLayout()
+        self.combo_box_name = QtWidgets.QComboBox()
+        self.combo_box_name.currentIndexChanged.connect(self.combo_box_name_select_changed)
+        self.combo_box_sub = QtWidgets.QComboBox()
+        self.combo_box_sub.currentIndexChanged.connect(self.combo_box_sub_select_changed)
+        self.combo_box_score = QtWidgets.QComboBox()
+        self.combo_box_score.currentIndexChanged.connect(self.combo_box_score_select_changed)
+        self.combo_box_score.addItems([str(i) for i in range(101)])
+        self.change_button = ButtonComponent("Change", enable=True)
+        self.change_button.clicked.connect(self.change_action)
+
+        layout.addWidget(self.combo_box_name)
+        layout.addWidget(self.combo_box_sub)
+        layout.addWidget(self.combo_box_score)
+        layout.addWidget(self.change_button)
+        
+        self.setLayout(layout)
+
+    def populate_combo_box_name(self, student_names):
+        self.combo_box_name.clear()
+        self.combo_box_name.addItems(student_names)
+
+    def populate_combo_box_sub(self, subjects):
+        self.combo_box_sub.clear()
+        self.combo_box_sub.addItems(subjects)
+    
+    def combo_box_name_select_changed(self):
+        self.name = self.combo_box_name.currentText()
+        if self.parent:
+            students = self.parent.result['parameters']
+            if self.name in students:
+                subjects = list(students[self.name]['scores'].keys())
+                self.populate_combo_box_sub(subjects)
+
+    def combo_box_sub_select_changed(self):
+        self.subject = self.combo_box_sub.currentText()
+
+    def combo_box_score_select_changed(self):
+        self.score = self.combo_box_score.currentText()
+        # self.change_button.setEnabled(True)
+
+    def change_action(self):
+        if self.parent:
+            student_dict = self.parent.result['parameters']
+            student_dict[self.name]['scores'][self.subject] = self.score
+            change_dict = {'command': 'modify', 'parameters': student_dict[self.name]}
+            self.send_command = ExecuteSendCommand(change_dict)
+            self.send_command.return_sig.connect(self.process_send_result)
+            self.send_command.start() 
+
+    def process_send_result(self, result):
+        result = json.loads(result)
+        if result['status'] == 'OK':
+            self.change_button.setEnabled(False)
+        else:
+            self.change_button.setEnabled(True)
+
+
+
+class AddNewWidget(QtWidgets.QWidget):
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.setObjectName("add_newsub_widget")
+        layout = QtWidgets.QVBoxLayout()
+        self.combo_box_name = QtWidgets.QComboBox()
+        self.combo_box_name.currentIndexChanged.connect(self.combo_box_name_select_changed)
+        self.subject_label = LabelComponent(12, "Subject:")
+        self.subject_editor_label = LineEditComponent("")
+        self.subject_editor_label.textChanged.connect(self.subject_change)
+        self.combo_box_score = QtWidgets.QComboBox()
+        self.combo_box_score.setEnabled(False)
+        self.combo_box_score.currentIndexChanged.connect(self.combo_box_score_select_changed)
+        self.combo_box_score.addItems([str(i) for i in range(101)])
+        self.add_new_button = ButtonComponent("Add New", enable=False)
+        self.add_new_button.clicked.connect(self.add_new_action)
+
+        layout.addWidget(self.combo_box_name)
+        layout.addWidget(self.subject_label)
+        layout.addWidget(self.subject_editor_label)
+        layout.addWidget(self.combo_box_score)
+        layout.addWidget(self.add_new_button)
+        
+        self.setLayout(layout)
+
+    def populate_combo_box_name(self, student_names):
+        self.combo_box_name.clear()
+        self.combo_box_name.addItems(student_names)
+    
+    def combo_box_name_select_changed(self):
+        self.name = self.combo_box_name.currentText()
+        if self.parent:
+            students = self.parent.result['parameters']
+            if self.name in students:
+                self.subjects = list(students[self.name]['scores'].keys())
+
+    def subject_change(self):
+        self.new_subject = self.subject_editor_label.text()
+        if self.new_subject in self.subjects:
+            self.combo_box_score.setEnabled(False)
+            self.add_new_button.setEnabled(False)
+        else:
+            self.combo_box_score.setEnabled(True)
+            self.add_new_button.setEnabled(True)
+
+    def combo_box_score_select_changed(self):
+        self.score = self.combo_box_score.currentText()
+    
+
+    def add_new_action(self):
+        if self.parent:
+            student_dict = self.parent.result['parameters']
+            student_dict[self.name]['scores'][self.new_subject] = self.score
+            add_new_dict = {'command': 'add_new', 'parameters': student_dict[self.name]}
+            self.send_command = ExecuteSendCommand(add_new_dict)
+            self.send_command.return_sig.connect(self.process_send_result)
+            self.send_command.start()
+
+    def process_send_result(self, result):
+        result = json.loads(result)
+        if result['status'] == 'OK':
+            self.add_new_button.setEnabled(False)
+            self.subject_editor_label.clear()
+            self.combo_box_score.setEnabled(False)
+        else:
+            self.add_new_button.setEnabled(True)
+
+# class AddNewWidget(QtWidgets.QWidget):
+#     def __init__(self,parent=None):
+#         super().__init__(parent)
+#         self.setObjectName("add_newsub_widget")
+#         layout = QtWidgets.QVBoxLayout()
+#         self.combo_box_name = QtWidgets.QComboBox()
+#         self.combo_box_name.currentIndexChanged.connect(self.combo_box_select_changed)
+#         self.subject_label = LabelComponent(16, "Subject:")
+#         self.subject_editor_label = LineEditComponent("")
+#         self.subject_editor_label.textChanged.connect(self.subject_change)
+#         self.combo_box_score = QtWidgets.QComboBox()
+#         self.combo_box_score.setEnabled(False)
+#         self.combo_box_score.currentIndexChanged.connect(self.combo_box_score_select_addnew)
+#         self.combo_box_score.addItems([str(i) for i in range(101)])
+#         self.add_new_button = ButtonComponent("add_new", enable=False)
+#         self.add_new_button.clicked.connect(self.add_new_action)
+
+#         layout.addWidget(self.combo_box_name)
+#         layout.addWidget(self.subject_label)
+#         layout.addWidget(self.subject_editor_label)
+#         layout.addWidget(self.combo_box_score)
+#         layout.addWidget(self.add_new_button)
+        
+#         self.setLayout(layout)
+
+#     def populate_combo_box_name(self, student_names):
+#         self.combo_box_name.clear()
+#         self.combo_box_name.addItems(student_names)
+
+#     def combo_box_name_select_changed(self):
+#         self.name = self.combo_box_name.currentText()
+#         if self.parent:
+#             students = self.parent.result['parameters']
+#             if self.name in students:
+#                 self.subjects = list(students[self.name]['scores'].keys())
+    
+#     def subject_change(self):
+#         self.new_subject = self.subject_editor_label.text()
+#         if self.new_subject in self.subjects:
+#             self.combo_box_score.setEnabled(False)
+#         else:
+#             self.combo_box_score.setEnabled(True)
+    
+#     def combo_box_score_select_addnew(self):
+#         self.score = self.combo_box_score.currentText()
+#         self.add_new_button.setEnabled(True)
+    
+#     def add_new_action(self):
+#         if self.parent:
+#             student_dict = self.parent.result['parameters']
+#             student_dict[self.name]['scores'][self.new_subject] = self.score
+#             add_new_dict = {'command': 'modify', 'parameters': student_dict[self.name]}
+#             self.send_command = ExecuteSendCommand(add_new_dict)
+#             self.send_command.return_sig.connect(self.process_send_result)
+#             self.send_command.start()
+
+#     def process_send_result(self, result):
+#         result = json.loads(result)
+#         if result['status'] == 'OK':
+#             self.add_new_button.setEnabled(False)
+#             self.subject_editor_label.clear()
+#             self.combo_box_score.setEnabled(False)
+#         else:
+#             self.add_new_button.setEnabled(True)
+
+
+
