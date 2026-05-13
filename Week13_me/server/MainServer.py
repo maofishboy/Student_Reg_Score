@@ -6,6 +6,7 @@ from Command.QueryStu import QueryStu
 from SocketServer.SocketServer import SocketServer
 from DBController.DBConnection import DBConnection
 from DBController.DBInitializer import DBInitializer
+from pathlib import Path
 
 action_list = {
     "add": AddStu, 
@@ -21,7 +22,7 @@ class StudentManager:
         return result
 
 def main():
-    DBConnection.db_file_path = "student_dict.db"
+    DBConnection.db_file_path = str(Path(__file__).resolve().parent / "student_dict.db")
     DBInitializer().execute()
     student_manager = StudentManager()
     server = SocketServer(student_manager)

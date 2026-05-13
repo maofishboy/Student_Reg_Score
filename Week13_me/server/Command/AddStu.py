@@ -25,3 +25,4 @@ class AddStu:
                 self.subject_info_table.insert_a_subject(student_id, subject, score)
 
             return {'status': 'OK'}
+        return {'status': 'Fail', 'reason': 'The student already exists.'}

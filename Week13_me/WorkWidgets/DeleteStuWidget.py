@@ -76,6 +76,7 @@ class DeleteWidget(QtWidgets.QWidget):
         self.setLayout(layout)
 
     def populate_combo_box(self, student_names):
+        self.combo_box_name.clear()
         self.combo_box_name.addItems(student_names)
 
     def combo_box_select_changed(self):
