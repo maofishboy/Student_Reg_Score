@@ -1,6 +1,6 @@
 from PyQt6 import QtCore
 from PyQt6.QtCore import pyqtSignal
-from SocketClient .SocketClient import SocketClient
+from SocketClient.SocketClient import SocketClient
 import json
 
 class ExecuteSendCommand(QtCore.QThread):
@@ -11,11 +11,16 @@ class ExecuteSendCommand(QtCore.QThread):
         self.data = data  # 接收字典格式的數據
 
     def run(self):
-        client = SocketClient()
+        client = None
         try:
+            client = SocketClient()
             client.send_command(self.data['command'], self.data['parameters'])
             response = client.wait_response()
-            self.return_sig.emit(json.dumps(response))
+        except Exception as error:
+            response = {"status": "Fail", "reason": f"Connection error: {error}"}
         finally:
-            client.close()
+            if client is not None:
+                client.close()
+
+        self.return_sig.emit(json.dumps(response))
     

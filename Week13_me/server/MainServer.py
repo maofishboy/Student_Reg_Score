@@ -18,6 +18,8 @@ action_list = {
 
 class StudentManager:
     def manager_execute(self, command, parameters):
+        if command not in action_list:
+            return {"status": "Fail", "reason": f"Unknown command: {command}"}
         result = action_list[command]().execute(parameters)
         return result
 
@@ -38,4 +40,6 @@ def main():
     server.server_socket.close()
     print("leaving ....... ")
 
-main()
+
+if __name__ == "__main__":
+    main()
