@@ -4,3 +4,5 @@ __pycache__/
 *.db
 .venv/
 venv/
+server_stdout.log
+server_stderr.log

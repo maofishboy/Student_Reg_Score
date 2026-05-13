@@ -7,6 +7,8 @@ from SocketServer.SocketServer import SocketServer
 from DBController.DBConnection import DBConnection
 from DBController.DBInitializer import DBInitializer
 from pathlib import Path
+import sys
+import time
 
 action_list = {
     "add": AddStu, 
@@ -31,11 +33,17 @@ def main():
     server.daemon = True
     server.serve()
 
-    # because we set daemon is true, so the main thread has to keep alive
-    while True:
-        command = input()
-        if command == "finish":
-            break
+    try:
+        if sys.stdin and sys.stdin.isatty():
+            while True:
+                command = input()
+                if command == "finish":
+                    break
+        else:
+            while True:
+                time.sleep(1)
+    except (EOFError, KeyboardInterrupt):
+        pass
     
     server.server_socket.close()
     print("leaving ....... ")
